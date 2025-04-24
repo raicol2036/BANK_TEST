@@ -8,7 +8,7 @@ from io import BytesIO
 
 st.set_page_config(page_title="高爾夫對賭", layout="wide")
 
-st.title("🏌️ 高爾夫賽事Bank")
+st.title("🏌️ 高爾夫對賭賽事系統")
 
 course_db = {
     "台中國際(東區)": {"par": [4, 4, 3, 5, 4, 4, 3, 5, 4], "handicap": [2, 8, 5, 4, 7, 1, 9, 3, 6]},
@@ -53,6 +53,20 @@ scores = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)]
 events = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
 
 st.header("輸入每洞成績")
+# 讓桿計算準備
+front_hcp = course_db[front]["handicap"]
+back_hcp = course_db[back]["handicap"]
+
+# 計算每位球員每區域需被讓幾桿（與最低差點者相比）
+min_hcp = min(handicaps.values())
+stroke_map = {
+    p: {
+        'front': sorted(front_hcp)[:max(0, handicaps[p] - min_hcp)],
+        'back': sorted(back_hcp)[:max(0, handicaps[p] - min_hcp)]
+    }
+    for p in players
+}
+
 event_opts = ["none", "sand", "water", "ob", "miss", "3putt"]
 
 running_points = {p: 0 for p in players}
@@ -69,7 +83,7 @@ for i in range(18):
                 st.markdown("👑 **Super Rich Man**")
             elif current_titles[p] == "Rich":
                 st.markdown("🏆 **Rich Man**")
-            scores.loc[p, f"第{i+1}洞"] = st.number_input(f"{p} 桿數", 1, 15, par[i], key=f"score_{p}_{i}")
+            scores.loc[p, f"第{i+1}洞"] = st.number_input(f"{p} 桿數（{running_points[p]} 點）", 1, 15, par[i], key=f"score_{p}_{i}")
             events.loc[p, f"第{i+1}洞"] = ",".join(st.multiselect(f"{p} 事件", event_opts, default=["none"], key=f"event_{p}_{i}"))
 
     confirmed = st.checkbox(f"✅ 確認第{i+1}洞成績", key=f"confirm_{i}")
@@ -82,8 +96,17 @@ for i in range(18):
     if confirmed:
         raw = scores[f"第{i+1}洞"]
         evt = events[f"第{i+1}洞"]
-        min_score = raw.min()
-        winners = raw[raw == min_score].index.tolist()
+        # 計算讓桿後分數
+adj = {}
+for p in players:
+    adj[p] = raw[p]
+    if i < 9 and hcp[i] in stroke_map[p]['front']:
+        adj[p] -= 1
+    elif i >= 9 and hcp[i] in stroke_map[p]['back']:
+        adj[p] -= 1
+
+min_score = min(adj.values())
+        winners = [p for p in players if adj[p] == min_score]
         penalties = {p: 0 for p in players}
 
         for p in players:
