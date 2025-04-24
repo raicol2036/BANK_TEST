@@ -68,12 +68,6 @@ for i in range(18):
             )
 
     confirmed = st.checkbox(f"✅ 確認第{i+1}洞成績", key=f"confirm_{i}")
-    if confirmed:
-        if len(winners) == 1:
-            st.markdown(f"🏆 **本洞勝者：{winners[0]}**", unsafe_allow_html=True)
-        else:
-            st.markdown("⚖️ **本洞平手**", unsafe_allow_html=True)
-
     if not confirmed:
         continue
 
@@ -97,6 +91,14 @@ for i in range(18):
         victory_map[p1] = p1_wins
 
     winners = [p for p in players if victory_map[p] == len(players) - 1]
+
+    # ✅ 修正：此處顯示勝者或平手資訊
+    if confirmed:
+        if len(winners) == 1:
+            st.markdown(f"🏆 **本洞勝者：{winners[0]}**", unsafe_allow_html=True)
+        else:
+            st.markdown("⚖️ **本洞平手**", unsafe_allow_html=True)
+
     penalties = {p: 0 for p in players}
 
     for p in players:
