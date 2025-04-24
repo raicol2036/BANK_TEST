@@ -1,12 +1,16 @@
-# golf_bet_app/app.py — 修正最終 Rich/Super Rich 更新邏輯，避免語法錯誤
-
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-from io import BytesIO
+import os
+
+CSV_PATH = "players.csv"
+if "players" not in st.session_state:
+    if os.path.exists(CSV_PATH):
+        df = pd.read_csv(CSV_PATH)
+        st.session_state.players = df["name"].tolist()
+    else:
+        st.session_state.players = []
 
 st.set_page_config(page_title="高爾夫對賭", layout="wide")
-
 st.title("🏌️ 高爾夫對賭賽事系統")
 
 course_db = {
@@ -15,30 +19,26 @@ course_db = {
     "台中國際(中區)": {"par": [4, 4, 3, 5, 4, 4, 3, 4, 5], "handicap": [7, 2, 8, 5, 4, 1, 9, 3, 6]}
 }
 
-if "players" not in st.session_state:
-    st.session_state.players = ["Lee", "Joye", "Raicol", "Jerry"]
-if "confirmed" not in st.session_state:
-    st.session_state.confirmed = set()
-
-st.header("球場設定")
 front = st.selectbox("前九洞球場", list(course_db.keys()), key="front")
 back = st.selectbox("後九洞球場", list(course_db.keys()), key="back")
 par = course_db[front]["par"] + course_db[back]["par"]
 hcp = course_db[front]["handicap"] + course_db[back]["handicap"]
 
-players = st.multiselect("選擇參賽球員", st.session_state.players, default=st.session_state.players[:4])
+players = st.multiselect("選擇參賽球員", st.session_state.players, default=[])
 new = st.text_input("新增球員")
-if new and new not in st.session_state.players:
-    st.session_state.players.append(new)
-    players.append(new)
+if new:
+    if new not in st.session_state.players:
+        st.session_state.players.append(new)
+        pd.DataFrame({"name": st.session_state.players}).to_csv(CSV_PATH, index=False)
+        st.success(f"✅ 已新增球員 {new} 至資料庫")
+    if new not in players:
+        players.append(new)
 
 handicaps = {p: st.number_input(f"{p} 差點", 0, 54, 0, key=f"hcp_{p}") for p in players}
 bet_per_person = st.number_input("單局賭金（每人）", 10, 1000, 100)
 
 scores = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
 events = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
-
-st.header("輸入每洞成績")
 event_opts = ["none", "sand", "water", "ob", "miss", "3putt"]
 
 running_points = {p: 0 for p in players}
@@ -59,63 +59,59 @@ for i in range(18):
             events.loc[p, f"第{i+1}洞"] = ",".join(st.multiselect(f"{p} 事件", event_opts, default=["none"], key=f"event_{p}_{i}"))
 
     confirmed = st.checkbox(f"✅ 確認第{i+1}洞成績", key=f"confirm_{i}")
-    if confirmed:
-        st.session_state.confirmed.add(i)
-        st.success(f"✅ 第{i+1}洞成績已確認")
+    if not confirmed:
+        continue
+
+    raw = scores[f"第{i+1}洞"]
+    evt = events[f"第{i+1}洞"]
+    min_score = raw.min()
+    winners = raw[raw == min_score].index.tolist()
+    penalties = {p: 0 for p in players}
+
+    for p in players:
+        acts = evt[p].split(",")
+        title = current_titles[p]
+        if title:
+            pen = 0
+            if raw[p] >= par[i] + 3 or "3putt" in acts:
+                pen += 1
+            if any(a in acts for a in ["sand", "water", "ob"]):
+                pen += 1
+            if title == "SuperRich" and "miss" in acts:
+                pen += 1
+            pen = min(pen, 3)
+            running_points[p] -= pen
+            penalties[p] = pen
+
+    point_bank += sum(penalties.values())
+
+    if len(winners) == 1:
+        w = winners[0]
+        transfer = 0
+        if raw[w] <= par[i] - 1:
+            for p in players:
+                if p != w and running_points[p] > 0:
+                    running_points[p] -= 1
+                    transfer += 1
+        total = point_bank + transfer
+        running_points[w] += total
+        log.append(f"第{i+1}洞 勝者: {w} 🎯 +{total} 點")
+        point_bank = 1
     else:
-        st.warning(f"⚠️ 第{i+1}洞尚未確認，將不納入點數計算")
+        point_bank += 1
+        log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
 
-    if confirmed:
-        raw = scores[f"第{i+1}洞"]
-        evt = events[f"第{i+1}洞"]
-        min_score = raw.min()
-        winners = raw[raw == min_score].index.tolist()
-        penalties = {p: 0 for p in players}
-
-        for p in players:
-            acts = evt[p].split(",")
-            title = current_titles[p]
-            if title:
-                pen = 0
-                if raw[p] >= par[i] + 3 or "3putt" in acts:
-                    pen += 1
-                if any(a in acts for a in ["sand", "water", "ob"]):
-                    pen += 1
-                if title == "SuperRich" and "miss" in acts:
-                    pen += 1
-                pen = min(pen, 3)
-                running_points[p] -= pen
-                penalties[p] = pen
-
-        point_bank += sum(penalties.values())
-
-        if len(winners) == 1:
-            w = winners[0]
-            transfer = 0
-            if raw[w] <= par[i] - 1:
-                for p in players:
-                    if p != w and running_points[p] > 0:
-                        running_points[p] -= 1
-                        transfer += 1
-            total = point_bank + transfer
-            running_points[w] += total
-            log.append(f"第{i+1}洞 勝者: {w} 🎯 +{total} 點")
-            point_bank = 1
+    for p in players:
+        if running_points[p] >= 8:
+            current_titles[p] = "SuperRich"
+        elif running_points[p] >= 4:
+            current_titles[p] = "Rich"
         else:
-            point_bank += 1
-            log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
-
-        for p in players:
-            if running_points[p] >= 8:
-                current_titles[p] = "SuperRich"
-            elif running_points[p] >= 4:
-                current_titles[p] = "Rich"
-            else:
-                current_titles[p] = ""
+            current_titles[p] = ""
 
 if st.button("📊 顯示比賽結果"):
     total_bet = bet_per_person * len(players)
-    completed = len(st.session_state.confirmed)
+    completed = len([i for i in range(18) if f"confirm_{i}" in st.session_state and st.session_state[f"confirm_{i}"]])
     result = pd.DataFrame({
         "總點數": [running_points[p] for p in players],
         "賭金結果": [running_points[p] * total_bet - completed * bet_per_person for p in players],
@@ -123,15 +119,7 @@ if st.button("📊 顯示比賽結果"):
     }, index=players).sort_values("賭金結果", ascending=False)
 
     st.subheader("總結結果")
-    st.dataframe(result.style.applymap(lambda v: "background-color: gold" if v == "SuperRich" else "background-color: lightblue" if v == "Rich" else "", subset=["頭銜"]))
-
-    fig, ax = plt.subplots(figsize=(8, 0.5 + len(result) * 0.5))
-    ax.axis("off")
-    table = ax.table(cellText=result.values, colLabels=result.columns, rowLabels=result.index, cellLoc='center', loc='center')
-    table.scale(1, 1.5)
-    buf = BytesIO()
-    fig.savefig(buf, format="png", bbox_inches="tight")
-    st.image(buf, caption="LINE 可分享總表截圖")
+    st.dataframe(result)
 
     st.subheader("洞別說明 Log")
     for line in log:
