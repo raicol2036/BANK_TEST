@@ -35,25 +35,11 @@ if new:
         players.append(new)
 
 handicaps = {p: st.number_input(f"{p} 差點", 0, 54, 0, key=f"hcp_{p}") for p in players}
-
-# 防呆：若無球員則停止執行
 if len(players) == 0:
     st.warning("⚠️ 請先選擇參賽球員")
     st.stop()
 
 bet_per_person = st.number_input("單局賭金（每人）", 10, 1000, 100)
-
-# 讓桿計算
-front_hcp = course_db[front]["handicap"]
-back_hcp = course_db[back]["handicap"]
-min_hcp = min(handicaps.values())
-stroke_map = {
-    p: {
-        'front': sorted(front_hcp)[:max(0, handicaps[p] - min_hcp)],
-        'back': sorted(back_hcp)[:max(0, handicaps[p] - min_hcp)]
-    }
-    for p in players
-}
 
 scores = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
 events = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
@@ -87,17 +73,26 @@ for i in range(18):
     raw = scores[f"第{i+1}洞"]
     evt = events[f"第{i+1}洞"]
 
-    # 讓桿後的桿數比較
-    adj = {}
-    for p in players:
-        adj[p] = raw[p]
-        if i < 9 and hcp[i] in stroke_map[p]['front']:
-            adj[p] -= 1
-        elif i >= 9 and hcp[i] in stroke_map[p]['back']:
-            adj[p] -= 1
+    # 逐對比較邏輯（由差點低者對高者讓桿）
+    victory_map = {}
+    for p1 in players:
+        p1_wins = 0
+        for p2 in players:
+            if p1 == p2:
+                continue
+            adj_p1, adj_p2 = raw[p1], raw[p2]
+            diff12 = handicaps[p1] - handicaps[p2]
+            diff21 = -diff12
+            hole_hcp_list = course_db[front]["handicap"] if i < 9 else course_db[back]["handicap"]
+            if diff12 > 0 and hcp[i % 9] in sorted(hole_hcp_list)[:diff12]:
+                adj_p1 -= 1
+            if diff21 > 0 and hcp[i % 9] in sorted(hole_hcp_list)[:diff21]:
+                adj_p2 -= 1
+            if adj_p1 < adj_p2:
+                p1_wins += 1
+        victory_map[p1] = p1_wins
 
-    min_score = min(adj.values())
-    winners = [p for p in players if adj[p] == min_score]
+    winners = [p for p, v in victory_map.items() if v == len(players) - 1]
     penalties = {p: 0 for p in players}
 
     for p in players:
