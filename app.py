@@ -1,5 +1,5 @@
 # golf_bet_app/app.py
-# 高爾夫對賭系統（支援 18 洞、差點讓桿、平手點數累積、Birdy 加點、洞別確認、LINE 分享圖像）
+# 高爾夫對賭系統（支援 18 洞、差點讓桿、平手點數累積、Birdy 加點、洞別確認、LINE 分享圖像、單洞賭金修正）
 
 import streamlit as st
 import pandas as pd
@@ -37,7 +37,7 @@ if new and new not in st.session_state.players:
     players.append(new)
 
 handicaps = {p: st.number_input(f"{p} 差點", 0, 54, 0, key=f"hcp_{p}") for p in players}
-bet = st.number_input("每點賭金 (元)", 10, 1000, 50)
+bet = st.number_input("每點賭金 (元)", 10, 1000, 100)
 
 # 分數與事件輸入
 scores = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
@@ -47,7 +47,7 @@ st.header("輸入每洞成績")
 event_opts = ["none", "sand", "water", "ob", "miss", "3putt"]
 
 for i in range(18):
-    st.subheader(f"第{i+1}洞 (Par {par[i]})")
+    st.subheader(f"第{i+1}洞 (Par {par[i]} / HCP {hcp[i]})")
     cols = st.columns(len(players))
     for j, p in enumerate(players):
         with cols[j]:
@@ -80,6 +80,7 @@ if st.button("🔍 計算總結果"):
     points = {p: 0 for p in players}
     titles = {p: None for p in players}
     log = []
+    money = {p: 0 for p in players}  # 💰 每位賭金計算
 
     for i in range(18):
         if i not in st.session_state.confirmed:
@@ -94,7 +95,6 @@ if st.button("🔍 計算總結果"):
         min_score = adj.min()
         winners = adj[adj == min_score].index.tolist()
 
-        # 懲罰計算
         penalties = {p: 0 for p in players}
         for p in players:
             e = evts[p].split(",")
@@ -132,8 +132,15 @@ if st.button("🔍 計算總結果"):
                     if p != w and points[p] > 0:
                         points[p] -= 1
                         transfer += 1
-            points[w] += point_bank + transfer
-            log.append(f"第{i+1}洞 勝者: {w} 🎯 +{point_bank} 點{' +轉移' if transfer else ''}")
+
+            actual_bonus = point_bank + transfer
+            points[w] += actual_bonus
+            losers = [p for p in players if p != w]
+            money[w] += len(losers) * bet
+            for p in losers:
+                money[p] -= bet
+
+            log.append(f"第{i+1}洞 勝者: {w} 🎯 +{actual_bonus} 點 / 賺 {len(losers)*bet} 元")
             point_bank = 1
         else:
             log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
@@ -141,13 +148,12 @@ if st.button("🔍 計算總結果"):
     st.header("比賽結果總表")
     res = pd.DataFrame({
         "總點數": [points[p] for p in players],
-        "賭金結果": [points[p] * bet * len(players) - bet * 18 for p in players],
+        "賭金結果": [money[p] for p in players],
         "頭銜": [titles[p] or "" for p in players]
-    }, index=players).sort_values("總點數", ascending=False)
+    }, index=players).sort_values("賭金結果", ascending=False)
 
     st.dataframe(res.style.applymap(lambda v: "background-color: gold" if v == "SuperRich" else "background-color: lightblue" if v == "Rich" else "", subset=["頭銜"]))
 
-    # 圖片輸出
     fig, ax = plt.subplots(figsize=(8, 0.5 + len(res) * 0.5))
     ax.axis("off")
     table = ax.table(cellText=res.values, colLabels=res.columns, rowLabels=res.index, cellLoc='center', loc='center')
