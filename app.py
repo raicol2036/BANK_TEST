@@ -53,11 +53,15 @@ for i in range(18):
         with cols[j]:
             scores.loc[p, f"第{i+1}洞"] = st.number_input(f"{p} 桿數", 1, 15, par[i], key=f"score_{p}_{i}")
             events.loc[p, f"第{i+1}洞"] = ",".join(st.multiselect(f"{p} 事件", event_opts, default=["none"], key=f"event_{p}_{i}"))
-    confirm = st.checkbox(f"✅ 確認第{i+1}洞成績", key=f"confirm_{i}")
-    if confirm:
-        st.session_state.confirmed.add(i)
 
-# 計算區
+    confirmed = st.checkbox(f"✅ 確認第{i+1}洞成績", key=f"confirm_{i}")
+    if confirmed:
+        st.session_state.confirmed.add(i)
+        st.success(f"✅ 第{i+1}洞成績已確認")
+    else:
+        st.warning(f"⚠️ 第{i+1}洞尚未確認，將不納入點數計算")
+
+# 計算邏輯
 if st.button("🔍 計算總結果"):
     let_dict = {
         p1: {
@@ -132,7 +136,7 @@ if st.button("🔍 計算總結果"):
             log.append(f"第{i+1}洞 勝者: {w} 🎯 +{point_bank} 點{' +轉移' if transfer else ''}")
             point_bank = 1
         else:
-            log.append(f"第{i+1}洞 平手，點數累積中（目前銀行 {point_bank} 點）")
+            log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
 
     st.header("比賽結果總表")
     res = pd.DataFrame({
