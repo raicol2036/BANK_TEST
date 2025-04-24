@@ -11,7 +11,7 @@ if "players" not in st.session_state:
         st.session_state.players = []
 
 st.set_page_config(page_title="高爾夫對賭", layout="wide")
-st.title("🏌️ 高爾夫對賭賽事系統")
+st.title("🏌️ 高爾夫BANK系統")
 
 course_db = {
     "台中國際(東區)": {"par": [4, 4, 3, 5, 4, 4, 3, 5, 4], "handicap": [2, 8, 5, 4, 7, 1, 9, 3, 6]},
