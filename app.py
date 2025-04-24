@@ -68,6 +68,12 @@ for i in range(18):
             )
 
     confirmed = st.checkbox(f"✅ 確認第{i+1}洞成績", key=f"confirm_{i}")
+    if confirmed:
+        if len(winners) == 1:
+            st.markdown(f"🏆 **本洞勝者：{winners[0]}**", unsafe_allow_html=True)
+        else:
+            st.markdown("⚖️ **本洞平手**", unsafe_allow_html=True)
+
     if not confirmed:
         continue
 
@@ -126,15 +132,7 @@ for i in range(18):
         point_bank += 1
         log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
 
-    
-    
-    if confirmed:
-        if winners:
-            st.markdown(f"🏆 **本洞勝者：{winners[0]}**", unsafe_allow_html=True)
-        else:
-            st.markdown("⚖️ **本洞平手**", unsafe_allow_html=True)
-
-for p in players:
+    for p in players:
         if running_points[p] >= 8:
             current_titles[p] = "SuperRich"
         elif running_points[p] >= 4:
