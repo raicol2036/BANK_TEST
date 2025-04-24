@@ -106,9 +106,11 @@ for i in range(18):
             log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
 
         for p in players:
-            if current_titles[p] == "SuperRich" and running_points[p] < 4:
-                current_titles[p] = "Rich" if running_points[p] >= 4 else ""
-            elif current_titles[p] == "Rich" and running_points[p] == 0:
+            if running_points[p] >= 8:
+                current_titles[p] = "SuperRich"
+            elif running_points[p] >= 4:
+                current_titles[p] = "Rich"
+            else:
                 current_titles[p] = ""
             elif current_titles[p] == "" and running_points[p] >= 8:
                 current_titles[p] = "SuperRich"
