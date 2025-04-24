@@ -1,5 +1,5 @@
 # golf_bet_app/app.py
-# 高爾夫對賭最終版（點數 × 人數 × 單局賭金 - 已確認洞 × 單局賭金）
+# 完整修正：point_bank 平手洞正確累加 + 勝者獲得累積點數
 
 import streamlit as st
 import pandas as pd
@@ -61,7 +61,7 @@ if st.button("🔍 計算總結果"):
     adjust = scores.copy()
     for i in range(18):
         for p in players:
-            let = 0  # 讓桿邏輯可補上
+            let = 0  # 可加入讓桿邏輯
             adjust.loc[p, f"第{i+1}洞"] -= let
 
     point_bank = 1
@@ -97,6 +97,7 @@ if st.button("🔍 計算總結果"):
                 pen = min(pen, 3)
                 points[p] -= pen
                 penalties[p] = pen
+
         point_bank += sum(penalties.values())
 
         if len(winners) == 1:
@@ -112,6 +113,7 @@ if st.button("🔍 計算總結果"):
             log.append(f"第{i+1}洞 勝者: {w} 🎯 +{actual_bonus} 點")
             point_bank = 1
         else:
+            point_bank += 1
             log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
 
     completed_holes = len(st.session_state.confirmed)
