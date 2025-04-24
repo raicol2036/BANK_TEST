@@ -108,9 +108,9 @@ for i in range(18):
             pen = 0
             if raw[p] >= par[i] + 3 or "3putt" in acts:
                 pen += 1
-            if any(a in acts for a in ["sand", "water", "ob"]):
+            if any(a in acts for a in ["sand", "miss", "water", "ob"]):
                 pen += 1
-            if title == "SuperRich" and "miss" in acts:
+            if title == "SuperRich" and "Par on" in acts:
                 pen += 1
             pen = min(pen, 3)
             running_points[p] -= pen
