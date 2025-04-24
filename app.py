@@ -15,8 +15,13 @@ course_db = {
     "台中國際(中區)": {"par": [4, 4, 3, 5, 4, 4, 3, 4, 5], "handicap": [7, 2, 8, 5, 4, 1, 9, 3, 6]}
 }
 
+CSV_PATH = "players.csv"
 if "players" not in st.session_state:
-    st.session_state.players = ["Lee", "Joye", "Raicol", "Jerry"]
+    if os.path.exists(CSV_PATH):
+        df = pd.read_csv(CSV_PATH)
+        st.session_state.players = df["name"].dropna().tolist()
+    else:
+        st.session_state.players = []
 if "confirmed" not in st.session_state:
     st.session_state.confirmed = set()
 
