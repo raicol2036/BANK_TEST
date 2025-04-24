@@ -53,6 +53,7 @@ point_bank = 1
 for i in range(18):
     st.subheader(f"第{i+1}洞 (Par {par[i]} / HCP {hcp[i]})")
     cols = st.columns(len(players))
+    winners = []  # 初始化避免未定義
     for j, p in enumerate(players):
         with cols[j]:
             if current_titles[p] == "SuperRich":
@@ -73,7 +74,6 @@ for i in range(18):
     raw = scores[f"第{i+1}洞"]
     evt = events[f"第{i+1}洞"]
 
-    # 逐對比較邏輯（由差點低者對高者讓桿）
     victory_map = {}
     for p1 in players:
         p1_wins = 0
@@ -81,18 +81,16 @@ for i in range(18):
             if p1 == p2:
                 continue
             adj_p1, adj_p2 = raw[p1], raw[p2]
-            diff12 = handicaps[p1] - handicaps[p2]
-            diff21 = -diff12
-            hole_hcp_list = course_db[front]["handicap"] if i < 9 else course_db[back]["handicap"]
-            if diff12 > 0 and hcp[i % 9] in sorted(hole_hcp_list)[:diff12]:
+            diff = handicaps[p1] - handicaps[p2]
+            if diff > 0 and hcp[i] <= diff:
                 adj_p1 -= 1
-            if diff21 > 0 and hcp[i % 9] in sorted(hole_hcp_list)[:diff21]:
+            elif diff < 0 and hcp[i] <= -diff:
                 adj_p2 -= 1
             if adj_p1 < adj_p2:
                 p1_wins += 1
         victory_map[p1] = p1_wins
 
-    winners = [p for p, v in victory_map.items() if v == len(players) - 1]
+    winners = [p for p in players if victory_map[p] == len(players) - 1]
     penalties = {p: 0 for p in players}
 
     for p in players:
@@ -122,7 +120,7 @@ for i in range(18):
                     transfer += 1
         total = point_bank + transfer
         running_points[w] += total
-        log.append(f"第{i+1}洞 勝者: {w} 🎯 +{total} 點")
+        log.append(f"第{i+1}洞 勝者: {w} 🎯 +{total} 點 🏆")
         point_bank = 1
     else:
         point_bank += 1
