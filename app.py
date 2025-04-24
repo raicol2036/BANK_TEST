@@ -1,4 +1,4 @@
-# golf_bet_app/app.py — 修正 Rich/SuperRich 狀態維持條件
+# golf_bet_app/app.py — 修正最終 Rich/Super Rich 更新邏輯，避免語法錯誤
 
 import streamlit as st
 import pandas as pd
@@ -112,10 +112,6 @@ for i in range(18):
                 current_titles[p] = "Rich"
             else:
                 current_titles[p] = ""
-            elif current_titles[p] == "" and running_points[p] >= 8:
-                current_titles[p] = "SuperRich"
-            elif current_titles[p] == "" and running_points[p] >= 4:
-                current_titles[p] = "Rich"
 
 if st.button("📊 顯示比賽結果"):
     total_bet = bet_per_person * len(players)
