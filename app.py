@@ -60,7 +60,7 @@ for i in range(18):
             elif current_titles[p] == "Rich":
                 st.markdown("🏆 **Rich Man**")
             scores.loc[p, f"第{i+1}洞"] = st.number_input(
-                f"{p} 桿數（{running_points[p]} 點）", 1, 15, par[i], key=f"score_{p}_{i}"
+                f"{p} 桿數（{running_points[p]} 點）{'🏆' if p in winners else ''}", 1, 15, par[i], key=f"score_{p}_{i}"
             )
             events.loc[p, f"第{i+1}洞"] = ",".join(
                 st.multiselect(f"{p} 事件", event_opts, default=["none"], key=f"event_{p}_{i}")
