@@ -24,19 +24,23 @@ back = st.selectbox("後九洞球場", list(course_db.keys()), key="back")
 par = course_db[front]["par"] + course_db[back]["par"]
 hcp = course_db[front]["handicap"] + course_db[back]["handicap"]
 
-players = st.multiselect("選擇參賽球員", st.session_state.players, default=[])
+# 選擇參賽球員（最多四人）
+players = st.multiselect("選擇參賽球員（最多 4 位）", st.session_state.players, max_selections=4)
+
+# 新增球員
 new = st.text_input("新增球員")
 if new:
     if new not in st.session_state.players:
         st.session_state.players.append(new)
         pd.DataFrame({"name": st.session_state.players}).to_csv(CSV_PATH, index=False)
         st.success(f"✅ 已新增球員 {new} 至資料庫")
-    if new not in players:
+    if new not in players and len(players) < 4:
         players.append(new)
 
+# 差點輸入與檢查
 handicaps = {p: st.number_input(f"{p} 差點", 0, 54, 0, key=f"hcp_{p}") for p in players}
 if len(players) == 0:
-    st.warning("⚠️ 請先選擇參賽球員")
+    st.warning("⚠️ 請先選擇至少一位參賽球員")
     st.stop()
 
 bet_per_person = st.number_input("單局賭金（每人）", 10, 1000, 100)
@@ -53,7 +57,7 @@ point_bank = 1
 for i in range(18):
     st.subheader(f"第{i+1}洞 (Par {par[i]} / HCP {hcp[i]})")
     cols = st.columns(len(players))
-    winners = []  # 初始化避免未定義
+    winners = []
     for j, p in enumerate(players):
         with cols[j]:
             if current_titles[p] == "SuperRich":
@@ -61,7 +65,7 @@ for i in range(18):
             elif current_titles[p] == "Rich":
                 st.markdown("🏆 **Rich Man**")
             scores.loc[p, f"第{i+1}洞"] = st.number_input(
-                f"{p} 桿數（{running_points[p]} 點）{'🏆' if p in winners else ''}", 1, 15, par[i], key=f"score_{p}_{i}"
+                f"{p} 桿數（{running_points[p]} 點）", 1, 15, par[i], key=f"score_{p}_{i}"
             )
             events.loc[p, f"第{i+1}洞"] = ",".join(
                 st.multiselect(f"{p} 事件", event_opts, default=["none"], key=f"event_{p}_{i}")
@@ -92,7 +96,6 @@ for i in range(18):
 
     winners = [p for p in players if victory_map[p] == len(players) - 1]
 
-    # ✅ 顯示勝者資訊並加上 BIRDY 圖示
     if confirmed:
         if len(winners) == 1:
             w = winners[0]
@@ -103,7 +106,6 @@ for i in range(18):
             st.markdown("⚖️ **本洞平手**", unsafe_allow_html=True)
 
     penalties = {p: 0 for p in players}
-
     for p in players:
         acts = evt[p].split(",")
         title = current_titles[p]
