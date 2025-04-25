@@ -92,10 +92,13 @@ for i in range(18):
 
     winners = [p for p in players if victory_map[p] == len(players) - 1]
 
-    # ✅ 修正：此處顯示勝者或平手資訊
+    # ✅ 顯示勝者資訊並加上 BIRDY 圖示
     if confirmed:
         if len(winners) == 1:
-            st.markdown(f"🏆 **本洞勝者：{winners[0]}**", unsafe_allow_html=True)
+            w = winners[0]
+            is_birdy = raw[w] <= par[i] - 1
+            bird_icon = " 🐦" if is_birdy else ""
+            st.markdown(f"🏆 **本洞勝者：{w}{bird_icon}**", unsafe_allow_html=True)
         else:
             st.markdown("⚖️ **本洞平手**", unsafe_allow_html=True)
 
