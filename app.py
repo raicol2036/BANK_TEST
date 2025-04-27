@@ -139,7 +139,8 @@ for i in range(18):
                 penalties[p] = pen
                 
         # --- 計算並處理勝者得分 ---
-    if len(winners) == 1:
+   # --- 計算並處理勝者得分 ---
+if len(winners) == 1:
     w = winners[0]
     is_birdy = raw[w] <= par[i] - 1
     bird_icon = " 🐦" if is_birdy else ""
@@ -186,52 +187,6 @@ else:
 
     point_bank += 1
     log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
-
-
-        for p in players:
-            if running_points[p] >= 8:
-                current_titles[p] = "SuperRich"
-            elif running_points[p] >= 4:
-                current_titles[p] = "Rich"
-            else:
-                current_titles[p] = ""
-
-        # 懲罰計算（新版）
-penalties = {p: 0 for p in players}
-for p in players:
-    acts = evt[p] if isinstance(evt[p], list) else []
-    title = current_titles[p]
-    if title:
-        pen = 0
-        # 錯誤事件每個扣一點
-        pen += sum(1 for act in acts if act in penalty_keywords)
-        # SuperRich 打 Par on 再額外扣一點
-        if title == "SuperRich" and "par_on" in acts:
-            pen += 1
-        # 單洞最高扣3點
-        pen = min(pen, 3)
-        running_points[p] -= pen
-        penalties[p] = pen
-        point_bank += sum(penalties.values())
-
-        if len(winners) == 1:
-            w = winners[0]
-            transfer = 0
-           transfer = 0
-           if raw[w] <= par[i] - 1:  # 如果是 Birdie
-           for p in players:
-           if p != w and running_points[p] > 0:
-            running_points[p] -= 1   # 扣對方一點
-            transfer += 1            # 計算轉移總點數
-
-# 總獲得點數 = 銀行點數 + 從其他球員轉來的點數
-total = point_bank + transfer
-running_points[w] += total
-            log.append(f"第{i+1}洞 勝者: {w} 🎯 +{total} 點 🏆")
-            point_bank = 1
-        else:
-            point_bank += 1
-            log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
 
         for p in players:
             if running_points[p] >= 8:
