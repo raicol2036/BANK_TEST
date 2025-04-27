@@ -129,21 +129,22 @@ for i in range(18):
         else:
             st.markdown("⚖️ **本洞平手**", unsafe_allow_html=True)
 
-        # 懲罰計算
-        penalties = {p: 0 for p in players}
-        for p in players:
-            acts = evt[p] if isinstance(evt[p], list) else []
-            title = current_titles[p]
-            if title:
-                pen = 0
-                if any(act in penalty_keywords for act in acts):
-                    pen += 1
-                if title == "SuperRich" and "par_on" in acts:
-                    pen += 1
-                pen = min(pen, 3)
-                running_points[p] -= pen
-                penalties[p] = pen
-
+        # 懲罰計算（新版）
+penalties = {p: 0 for p in players}
+for p in players:
+    acts = evt[p] if isinstance(evt[p], list) else []
+    title = current_titles[p]
+    if title:
+        pen = 0
+        # 錯誤事件每個扣一點
+        pen += sum(1 for act in acts if act in penalty_keywords)
+        # SuperRich 打 Par on 再額外扣一點
+        if title == "SuperRich" and "par_on" in acts:
+            pen += 1
+        # 單洞最高扣3點
+        pen = min(pen, 3)
+        running_points[p] -= pen
+        penalties[p] = pen
         point_bank += sum(penalties.values())
 
         if len(winners) == 1:
