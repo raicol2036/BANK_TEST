@@ -60,4 +60,136 @@ log = []
 point_bank = 1
 
 # --- 遍歷每一洞 ---
-for i
+for i in range(18):
+    st.subheader(f"第{i+1}洞 (Par {par[i]} / HCP {hcp[i]})")
+    cols = st.columns(len(players))
+
+    if mode == "主控操作端":
+        winners = []
+        for j, p in enumerate(players):
+            with cols[j]:
+                if current_titles[p] == "SuperRich":
+                    st.markdown("👑 **Super Rich Man**")
+                elif current_titles[p] == "Rich":
+                    st.markdown("🏆 **Rich Man**")
+                scores.loc[p, f"第{i+1}洞"] = st.number_input(f"{p} 桿數（{running_points[p]} 點）", 1, 15, par[i], key=f"score_{p}_{i}")
+                selected_display = st.multiselect(f"{p} 事件", event_opts_display, key=f"event_{p}_{i}")
+                selected_internal = [event_translate[d] for d in selected_display]
+                events.loc[p, f"第{i+1}洞"] = selected_internal
+
+        confirmed = st.checkbox(f"✅ 確認第{i+1}洞成績", key=f"confirm_{i}")
+        if not confirmed:
+            continue
+
+        raw = scores[f"第{i+1}洞"]
+        evt = events[f"第{i+1}洞"]
+
+        # --- 懲罰先計算 ---
+        penalties = {p: 0 for p in players}
+        for p in players:
+            acts = evt[p] if isinstance(evt[p], list) else []
+            title = current_titles[p]
+            pen = 0
+            pen += sum(1 for act in acts if act in penalty_keywords)
+            if title == "SuperRich" and "par_on" in acts:
+                pen += 1
+            pen = min(pen, 3)
+            running_points[p] -= pen
+            penalties[p] = pen
+
+        # --- 勝負判斷 ---
+        victory_map = {}
+        for p1 in players:
+            p1_wins = 0
+            for p2 in players:
+                if p1 == p2:
+                    continue
+                adj_p1, adj_p2 = raw[p1], raw[p2]
+                diff = handicaps[p1] - handicaps[p2]
+                if diff > 0 and hcp[i] <= diff:
+                    adj_p1 -= 1
+                elif diff < 0 and hcp[i] <= -diff:
+                    adj_p2 -= 1
+                if adj_p1 < adj_p2:
+                    p1_wins += 1
+            victory_map[p1] = p1_wins
+
+        winners = [p for p in players if victory_map[p] == len(players) - 1]
+
+        # --- 處理勝負顯示 ---
+        if len(winners) == 1:
+            w = winners[0]
+            is_birdy = raw[w] <= par[i] - 1
+            bird_icon = " 🐦" if is_birdy else ""
+
+            gain_points = point_bank
+            transfer = 0
+            if is_birdy:
+                for p in players:
+                    if p != w and running_points[p] > 0:
+                        running_points[p] -= 1
+                        transfer += 1
+            gain_points += transfer
+
+            running_points[w] += gain_points
+
+            winner_text = f"🏆 本洞勝者：{w}{bird_icon}（取得 +{gain_points} 點）"
+
+            penalty_texts = []
+            for p in players:
+                if penalties.get(p, 0) > 0:
+                    penalty_texts.append(f"{p} 扣 {penalties[p]} 點")
+
+            if penalty_texts:
+                penalty_summary = "；".join(penalty_texts)
+                winner_text += f"｜{penalty_summary}"
+
+            st.markdown(f"**{winner_text}**", unsafe_allow_html=True)
+            log.append(f"第{i+1}洞 勝者: {w} 🎯 +{gain_points} 點 🏆")
+            point_bank = 1
+
+        else:
+            penalty_texts = []
+            for p in players:
+                if penalties.get(p, 0) > 0:
+                    penalty_texts.append(f"{p} 扣 {penalties[p]} 點")
+            if penalty_texts:
+                penalty_summary = "｜" + "；".join(penalty_texts)
+            else:
+                penalty_summary = ""
+
+            st.markdown(f"⚖️ **本洞平手{penalty_summary}**", unsafe_allow_html=True)
+            point_bank += 1
+            log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
+
+        # --- 更新頭銜 ---
+        for p in players:
+            if running_points[p] >= 8:
+                current_titles[p] = "SuperRich"
+            elif running_points[p] >= 4:
+                current_titles[p] = "Rich"
+            else:
+                current_titles[p] = ""
+
+    else:
+        if f"confirm_{i}" in st.session_state and st.session_state[f"confirm_{i}"]:
+            st.success("✅ 本洞成績已完成")
+        else:
+            st.warning("⌛ 本洞尚未完成，等待主控端操作")
+
+# --- 最後結果 ---
+if st.button("\U0001F4CA 顯示比賽結果"):
+    total_bet = bet_per_person * len(players)
+    completed = len([i for i in range(18) if f"confirm_{i}" in st.session_state and st.session_state[f"confirm_{i}"]])
+    result = pd.DataFrame({
+        "總點數": [running_points[p] for p in players],
+        "賭金結果": [running_points[p] * total_bet - completed * bet_per_person for p in players],
+        "頭銜": [current_titles[p] for p in players]
+    }, index=players).sort_values("賭金結果", ascending=False)
+
+    st.subheader("總結結果")
+    st.dataframe(result)
+
+    st.subheader("洞別說明 Log")
+    for line in log:
+        st.text(line)
