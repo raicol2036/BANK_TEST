@@ -129,15 +129,15 @@ for i in range(18):
     # 計算贏家得到幾點
     gain_points = point_bank
 
-    # 如果有 Birdie，還會多轉移點數
+    # 如果 Birdie，會有額外轉移點數
     if is_birdy:
         extra_transfer = sum(1 for p in players if p != w and running_points[p] > 0)
         gain_points += extra_transfer
 
-    # 顯示勝者與取得幾點
+    # 顯示勝者與取得點數
     winner_text = f"🏆 本洞勝者：{w}{bird_icon}（取得 +{gain_points} 點）"
 
-    # 列出有扣點的球員
+    # 顯示扣點（只列有扣點的）
     penalty_texts = []
     for p in players:
         if penalties.get(p, 0) > 0:
@@ -151,7 +151,6 @@ for i in range(18):
 
 else:
     st.markdown("⚖️ **本洞平手**", unsafe_allow_html=True)
-
 
         # 懲罰計算（新版）
 penalties = {p: 0 for p in players}
