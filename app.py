@@ -216,13 +216,16 @@ for p in players:
         if len(winners) == 1:
             w = winners[0]
             transfer = 0
-            if raw[w] <= par[i] - 1:
-                for p in players:
-                    if p != w and running_points[p] > 0:
-                        running_points[p] -= 1
-                        transfer += 1
-            total = point_bank + transfer
-            running_points[w] += total
+           transfer = 0
+           if raw[w] <= par[i] - 1:  # 如果是 Birdie
+           for p in players:
+           if p != w and running_points[p] > 0:
+            running_points[p] -= 1   # 扣對方一點
+            transfer += 1            # 計算轉移總點數
+
+# 總獲得點數 = 銀行點數 + 從其他球員轉來的點數
+total = point_bank + transfer
+running_points[w] += total
             log.append(f"第{i+1}洞 勝者: {w} 🎯 +{total} 點 🏆")
             point_bank = 1
         else:
