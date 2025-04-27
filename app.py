@@ -138,54 +138,55 @@ for i in range(18):
                 running_points[p] -= pen
                 penalties[p] = pen
                 
-        if len(winners) == 1:
-            w = winners[0]
-            is_birdy = raw[w] <= par[i] - 1
-            bird_icon = " 🐦" if is_birdy else ""
+        # --- 計算並處理勝者得分 ---
+    if len(winners) == 1:
+    w = winners[0]
+    is_birdy = raw[w] <= par[i] - 1
+    bird_icon = " 🐦" if is_birdy else ""
 
-            # 計算贏家得到幾點
-            gain_points = point_bank
+    gain_points = point_bank
 
-            # 如果 Birdie，會有額外轉移點數
-            if is_birdy:
-                extra_transfer = sum(1 for p in players if p != w and running_points[p] > 0)
-                gain_points += extra_transfer
+    transfer = 0
+    if is_birdy:
+        for p in players:
+            if p != w and running_points[p] > 0:
+                running_points[p] -= 1
+                transfer += 1
+        gain_points += transfer
 
-            # 顯示勝者與取得點數
-            winner_text = f"🏆 本洞勝者：{w}{bird_icon}（取得 +{gain_points} 點）"
+    # 更新勝者點數
+    running_points[w] += gain_points
 
-            # 顯示扣點（只列有扣點的）
-            penalty_texts = []
-            for p in players:
-                if penalties.get(p, 0) > 0:
-                    penalty_texts.append(f"{p} 扣 {penalties[p]} 點")
+    # 畫面顯示勝者與扣點
+    winner_text = f"🏆 本洞勝者：{w}{bird_icon}（取得 +{gain_points} 點）"
 
-            if penalty_texts:
-                penalty_summary = "；".join(penalty_texts)
-                winner_text += f"｜{penalty_summary}"
+    penalty_texts = []
+    for p in players:
+        if penalties.get(p, 0) > 0:
+            penalty_texts.append(f"{p} 扣 {penalties[p]} 點")
+    if penalty_texts:
+        penalty_summary = "；".join(penalty_texts)
+        winner_text += f"｜{penalty_summary}"
 
-            st.markdown(f"**{winner_text}**", unsafe_allow_html=True)
+    st.markdown(f"**{winner_text}**", unsafe_allow_html=True)
 
-        else:
-            st.markdown("⚖️ **本洞平手**", unsafe_allow_html=True)
+    log.append(f"第{i+1}洞 勝者: {w} 🎯 +{gain_points} 點 🏆")
+    point_bank = 1
 
-        point_bank += sum(penalties.values())
+else:
+    penalty_texts = []
+    for p in players:
+        if penalties.get(p, 0) > 0:
+            penalty_texts.append(f"{p} 扣 {penalties[p]} 點")
+    if penalty_texts:
+        penalty_summary = "｜" + "；".join(penalty_texts)
+    else:
+        penalty_summary = ""
+    st.markdown(f"⚖️ **本洞平手{penalty_summary}**", unsafe_allow_html=True)
 
-        if len(winners) == 1:
-            w = winners[0]
-            transfer = 0
-            if raw[w] <= par[i] - 1:
-                for p in players:
-                    if p != w and running_points[p] > 0:
-                        running_points[p] -= 1
-                        transfer += 1
-            total = point_bank + transfer
-            running_points[w] += total
-            log.append(f"第{i+1}洞 勝者: {w} 🎯 +{total} 點 🏆")
-            point_bank = 1
-        else:
-            point_bank += 1
-            log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
+    point_bank += 1
+    log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
+
 
         for p in players:
             if running_points[p] >= 8:
