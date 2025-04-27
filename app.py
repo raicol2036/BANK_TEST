@@ -187,7 +187,6 @@ else:
 
     point_bank += 1
     log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
-
         for p in players:
             if running_points[p] >= 8:
                 current_titles[p] = "SuperRich"
