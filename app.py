@@ -122,12 +122,36 @@ for i in range(18):
         winners = [p for p in players if victory_map[p] == len(players) - 1]
 
         if len(winners) == 1:
-            w = winners[0]
-            is_birdy = raw[w] <= par[i] - 1
-            bird_icon = " 🐦" if is_birdy else ""
-            st.markdown(f"🏆 **本洞勝者：{w}{bird_icon}**", unsafe_allow_html=True)
-        else:
-            st.markdown("⚖️ **本洞平手**", unsafe_allow_html=True)
+    w = winners[0]
+    is_birdy = raw[w] <= par[i] - 1
+    bird_icon = " 🐦" if is_birdy else ""
+
+    # 計算贏家得到幾點
+    gain_points = point_bank
+
+    # 如果有 Birdie，還會多轉移點數
+    if is_birdy:
+        extra_transfer = sum(1 for p in players if p != w and running_points[p] > 0)
+        gain_points += extra_transfer
+
+    # 顯示勝者與取得幾點
+    winner_text = f"🏆 本洞勝者：{w}{bird_icon}（取得 +{gain_points} 點）"
+
+    # 列出有扣點的球員
+    penalty_texts = []
+    for p in players:
+        if penalties.get(p, 0) > 0:
+            penalty_texts.append(f"{p} 扣 {penalties[p]} 點")
+
+    if penalty_texts:
+        penalty_summary = "；".join(penalty_texts)
+        winner_text += f"｜{penalty_summary}"
+
+    st.markdown(f"**{winner_text}**", unsafe_allow_html=True)
+
+else:
+    st.markdown("⚖️ **本洞平手**", unsafe_allow_html=True)
+
 
         # 懲罰計算（新版）
 penalties = {p: 0 for p in players}
