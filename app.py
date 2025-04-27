@@ -47,7 +47,7 @@ bet_per_person = st.number_input("單局賭金（每人）", 10, 1000, 100)
 
 scores = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
 events = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
-event_opts = ["無", "下沙", "下水", "OB", "丟球", "加3或3推", "Par on"]
+event_opts = ["NOON", "下沙", "下水", "OB", "丟球", "加3或3推", "Par on"]
 
 running_points = {p: 0 for p in players}
 current_titles = {p: "" for p in players}
