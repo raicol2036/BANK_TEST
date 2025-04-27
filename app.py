@@ -47,7 +47,7 @@ bet_per_person = st.number_input("單局賭金（每人）", 10, 1000, 100)
 
 scores = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
 events = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
-event_opts = ["none", "sand", "water", "ob", "miss", "3putt or Triple", "Par on"]
+event_opts = ["無", "下沙", "下水", "OB", "丟球", "加3或3推", "Par on"]
 
 running_points = {p: 0 for p in players}
 current_titles = {p: "" for p in players}
@@ -113,9 +113,7 @@ for i in range(18):
             title = current_titles[p]
             if title:
                 pen = 0
-                if raw[p] >= par[i] + 3 or "3putt" in acts:
-                    pen += 1
-                if any(a in acts for a in ["sand", "miss", "water", "ob"]):
+                if any(a in acts for a in ["下沙", "下水", "OB", "丟球", "加3或3推"]):
                     pen += 1
                 if title == "SuperRich" and "Par on" in acts:
                     pen += 1
