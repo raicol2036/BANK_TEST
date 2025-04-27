@@ -121,7 +121,7 @@ for i in range(18):
 
         winners = [p for p in players if victory_map[p] == len(players) - 1]
 
-                if len(winners) == 1:
+        if len(winners) == 1:
             w = winners[0]
             is_birdy = raw[w] <= par[i] - 1
             bird_icon = " 🐦" if is_birdy else ""
