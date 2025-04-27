@@ -121,52 +121,47 @@ for i in range(18):
 
         winners = [p for p in players if victory_map[p] == len(players) - 1]
 
-        # 懲罰計算（新版）
-        penalties = {p: 0 for p in players}
-        for p in players:
-            acts = evt[p] if isinstance(evt[p], list) else []
-            title = current_titles[p]
-            if title:
-                pen = 0
-                # 錯誤事件每個扣一點
-                pen += sum(1 for act in acts if act in penalty_keywords)
-                # SuperRich 打 Par on 再額外扣一點
-                if title == "SuperRich" and "par_on" in acts:
-                    pen += 1
-                # 單洞最高扣3點
-                pen = min(pen, 3)
-                running_points[p] -= pen
-                penalties[p] = pen
-                
-        # --- 計算並處理勝者得分 ---
-   # --- 計算並處理勝者得分 ---
+        # --- 懲罰計算（新版） ---
+penalties = {p: 0 for p in players}
+for p in players:
+    acts = evt[p] if isinstance(evt[p], list) else []
+    title = current_titles[p]
+    if title:
+        pen = 0
+        # 錯誤事件每個扣一點
+        pen += sum(1 for act in acts if act in penalty_keywords)
+        # SuperRich 打 Par on 再額外扣一點
+        if title == "SuperRich" and "par_on" in acts:
+            pen += 1
+        # 單洞最高扣3點
+        pen = min(pen, 3)
+        running_points[p] -= pen
+        penalties[p] = pen
+
+# --- 勝負判定顯示 ---
 if len(winners) == 1:
     w = winners[0]
     is_birdy = raw[w] <= par[i] - 1
     bird_icon = " 🐦" if is_birdy else ""
 
-    # 先計算贏家得到幾點（包含 Birdie轉移）
     gain_points = point_bank
-
     transfer = 0
     if is_birdy:
         for p in players:
             if p != w and running_points[p] > 0:
-                running_points[p] -= 1  # 扣其他玩家1點
-                transfer += 1           # 累計轉移點數
+                running_points[p] -= 1
+                transfer += 1
         gain_points += transfer
 
-    # 更新勝者點數
     running_points[w] += gain_points
 
-    # 勝者畫面顯示
     winner_text = f"🏆 本洞勝者：{w}{bird_icon}（取得 +{gain_points} 點）"
 
     penalty_texts = []
     for p in players:
         if penalties.get(p, 0) > 0:
             penalty_texts.append(f"{p} 扣 {penalties[p]} 點")
-    
+
     if penalty_texts:
         penalty_summary = "；".join(penalty_texts)
         winner_text += f"｜{penalty_summary}"
@@ -177,12 +172,10 @@ if len(winners) == 1:
     point_bank = 1
 
 else:
-    # 平手情況
     penalty_texts = []
     for p in players:
         if penalties.get(p, 0) > 0:
             penalty_texts.append(f"{p} 扣 {penalties[p]} 點")
-    
     if penalty_texts:
         penalty_summary = "｜" + "；".join(penalty_texts)
     else:
@@ -193,13 +186,14 @@ else:
     point_bank += 1
     log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
 
-        for p in players:
-            if running_points[p] >= 8:
-                current_titles[p] = "SuperRich"
-            elif running_points[p] >= 4:
-                current_titles[p] = "Rich"
-            else:
-                current_titles[p] = ""
+# --- 更新頭銜 ---
+for p in players:
+    if running_points[p] >= 8:
+        current_titles[p] = "SuperRich"
+    elif running_points[p] >= 4:
+        current_titles[p] = "Rich"
+    else:
+        current_titles[p] = ""
 
     else:
         # 查看端：僅顯示進度資訊
