@@ -52,14 +52,7 @@ bet_per_person = st.number_input("單局賭金（每人）", 10, 1000, 100)
 scores = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
 events = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
 event_opts_display = ["下沙", "下水", "OB", "丟球", "加3或3推", "Par on"]
-event_translate = {
-    "下沙": "sand",
-    "下水": "water",
-    "OB": "ob",
-    "丟球": "miss",
-    "加3或3推": "3putt_or_plus3",
-    "Par on": "par_on"
-}
+event_translate = {"下沙": "sand", "下水": "water", "OB": "ob", "丟球": "miss", "加3或3推": "3putt_or_plus3", "Par on": "par_on"}
 penalty_keywords = ["sand", "water", "ob", "miss", "3putt_or_plus3"]
 running_points = {p: 0 for p in players}
 current_titles = {p: "" for p in players}
@@ -91,7 +84,20 @@ for i in range(18):
         raw = scores[f"第{i+1}洞"]
         evt = events[f"第{i+1}洞"]
 
-        # 勝負判定
+        # --- 懲罰先計算 ---
+        penalties = {p: 0 for p in players}
+        for p in players:
+            acts = evt[p] if isinstance(evt[p], list) else []
+            title = current_titles[p]
+            pen = 0
+            pen += sum(1 for act in acts if act in penalty_keywords)
+            if title == "SuperRich" and "par_on" in acts:
+                pen += 1
+            pen = min(pen, 3)
+            running_points[p] -= pen
+            penalties[p] = pen
+
+        # --- 勝負判斷 ---
         victory_map = {}
         for p1 in players:
             p1_wins = 0
@@ -110,21 +116,7 @@ for i in range(18):
 
         winners = [p for p in players if victory_map[p] == len(players) - 1]
 
-        # 懲罰計算
-        penalties = {p: 0 for p in players}
-        for p in players:
-            acts = evt[p] if isinstance(evt[p], list) else []
-            title = current_titles[p]
-            if title:
-                pen = 0
-                pen += sum(1 for act in acts if act in penalty_keywords)
-                if title == "SuperRich" and "par_on" in acts:
-                    pen += 1
-                pen = min(pen, 3)
-                running_points[p] -= pen
-                penalties[p] = pen
-
-        # 顯示勝負
+        # --- 處理勝負顯示 ---
         if len(winners) == 1:
             w = winners[0]
             is_birdy = raw[w] <= par[i] - 1
@@ -170,7 +162,7 @@ for i in range(18):
             point_bank += 1
             log.append(f"第{i+1}洞 平手，銀行累積中：{point_bank} 點")
 
-        # 更新頭銜
+        # --- 更新頭銜 ---
         for p in players:
             if running_points[p] >= 8:
                 current_titles[p] = "SuperRich"
