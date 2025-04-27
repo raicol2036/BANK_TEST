@@ -45,16 +45,32 @@ if len(players) == 0:
 
 bet_per_person = st.number_input("單局賭金（每人）", 10, 1000, 100)
 
+# --- 初始化 ---
 scores = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
 events = pd.DataFrame(index=players, columns=[f"第{i+1}洞" for i in range(18)])
-event_opts = ["none", "下沙", "下水", "OB", "丟球", "加3或3推", "Par on"]
+
+# 事件列表（顯示用）
+event_opts_display = ["下沙", "下水", "OB", "丟球", "加3或3推", "Par on"]
+
+# 中翻英對照表（內部判斷用）
+event_translate = {
+    "下沙": "sand",
+    "下水": "water",
+    "OB": "ob",
+    "丟球": "miss",
+    "加3或3推": "3putt_or_plus3",
+    "Par on": "par_on"
+}
+
+# 判罰關鍵字 (內部英文)
+penalty_keywords = ["sand", "water", "ob", "miss", "3putt_or_plus3"]
 
 running_points = {p: 0 for p in players}
 current_titles = {p: "" for p in players}
 log = []
 point_bank = 1
 
-# 主控端可以操作
+# --- 主控端可以操作 ---
 for i in range(18):
     st.subheader(f"第{i+1}洞 (Par {par[i]} / HCP {hcp[i]})")
     cols = st.columns(len(players))
@@ -67,12 +83,17 @@ for i in range(18):
                     st.markdown("👑 **Super Rich Man**")
                 elif current_titles[p] == "Rich":
                     st.markdown("🏆 **Rich Man**")
+                
                 scores.loc[p, f"第{i+1}洞"] = st.number_input(
                     f"{p} 桿數（{running_points[p]} 點）", 1, 15, par[i], key=f"score_{p}_{i}"
                 )
-                events.loc[p, f"第{i+1}洞"] = ",".join(
-                    st.multiselect(f"{p} 事件", event_opts, default=["none"], key=f"event_{p}_{i}")
+                
+                # multiselect選的是中文，儲存的是英文代號
+                selected_display = st.multiselect(
+                    f"{p} 事件", event_opts_display, key=f"event_{p}_{i}"
                 )
+                selected_internal = [event_translate[d] for d in selected_display]
+                events.loc[p, f"第{i+1}洞"] = selected_internal
 
         confirmed = st.checkbox(f"✅ 確認第{i+1}洞成績", key=f"confirm_{i}")
         if not confirmed:
@@ -81,6 +102,7 @@ for i in range(18):
         raw = scores[f"第{i+1}洞"]
         evt = events[f"第{i+1}洞"]
 
+        # 勝負判斷
         victory_map = {}
         for p1 in players:
             p1_wins = 0
@@ -107,15 +129,16 @@ for i in range(18):
         else:
             st.markdown("⚖️ **本洞平手**", unsafe_allow_html=True)
 
+        # 懲罰計算
         penalties = {p: 0 for p in players}
         for p in players:
-            acts = evt[p].split(",")
+            acts = evt[p] if isinstance(evt[p], list) else []
             title = current_titles[p]
             if title:
                 pen = 0
-                if any(a in acts for a in ["下沙", "下水", "OB", "丟球", "加3或3推"]):
+                if any(act in penalty_keywords for act in acts):
                     pen += 1
-                if title == "SuperRich" and "Par on" in acts:
+                if title == "SuperRich" and "par_on" in acts:
                     pen += 1
                 pen = min(pen, 3)
                 running_points[p] -= pen
