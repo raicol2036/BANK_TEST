@@ -12,7 +12,7 @@ if "players" not in st.session_state:
     else:
         st.session_state.players = []
 
-st.set_page_config(page_title="高爾夫對賭", layout="wide")
+st.set_page_config(page_title="🏌️ 高爾夫BANK系統", layout="wide")
 st.title("🏌️ 高爾夫BANK系統")
 
 # --- 模式選擇 ---
