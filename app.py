@@ -84,7 +84,6 @@ for i in range(18):
         raw = scores[f"第{i+1}洞"]
         evt = events[f"第{i+1}洞"]
 
-        # 先懲罰事件扣點
         penalties = {p: 0 for p in players}
         for p in players:
             acts = evt[p] if isinstance(evt[p], list) else []
@@ -96,7 +95,6 @@ for i in range(18):
             running_points[p] -= pen
             penalties[p] = pen
 
-        # 勝負判定
         victory_map = {}
         for p1 in players:
             p1_wins = 0
@@ -115,7 +113,6 @@ for i in range(18):
 
         winners = [p for p in players if victory_map[p] == len(players) - 1]
 
-        # 勝者處理
         if len(winners) == 1:
             w = winners[0]
             is_birdy = raw[w] <= par[i] - 1
@@ -131,7 +128,6 @@ for i in range(18):
             gain_points += transfer
             running_points[w] += gain_points
 
-            # 顯示
             winner_text = f"🏆 本洞勝者：{w}{bird_icon}（取得 +{gain_points} 點）"
             penalty_texts = [f"{p} 扣 {penalties[p]}點" for p in players if penalties.get(p, 0) > 0]
             if penalty_texts:
@@ -146,7 +142,6 @@ for i in range(18):
             point_bank += 1
             log.append(f"第{i+1}洞 平手 銀行累積 {point_bank}點")
 
-        # 更新頭銜
         for p in players:
             if running_points[p] >= 8:
                 current_titles[p] = "SuperRich"
@@ -161,7 +156,6 @@ for i in range(18):
         else:
             st.warning("⌛ 尚未完成")
 
-# --- 最後結果 ---
 if st.button("📊 顯示比賽結果"):
     total_bet = bet_per_person * len(players)
     completed = len([i for i in range(18) if f"confirm_{i}" in st.session_state and st.session_state[f"confirm_{i}"]])
