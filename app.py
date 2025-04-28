@@ -85,6 +85,8 @@ for i in range(18):
         raw = scores[f"第{i+1}洞"]
         evt = events[f"第{i+1}洞"]
 
+        start_of_hole_bank = point_bank  # 先記錄這洞開始時的bank
+
         # 先事件懲罰
         event_penalties = {p: 0 for p in players}
         for p in players:
@@ -145,7 +147,8 @@ for i in range(18):
             point_bank = 1
 
         else:
-            current_bank = point_bank + 1 + total_penalty_this_hole
+            add_this_hole = 1 + total_penalty_this_hole
+            bank_after_this_hole = start_of_hole_bank + add_this_hole
             penalty_texts = []
             for p in players:
                 total_penalty = event_penalties.get(p, 0)
@@ -155,9 +158,9 @@ for i in range(18):
                 penalty_summary = "｜" + "；".join(penalty_texts)
             else:
                 penalty_summary = ""
-            st.markdown(f"⚖️ **本洞平手{penalty_summary}（Bank累積 {current_bank}點）**", unsafe_allow_html=True)
-            log.append(f"第{i+1}洞 平手，銀行累積 {current_bank}點")
-            point_bank = current_bank
+            st.markdown(f"⚖️ **本洞平手{penalty_summary}（Bank累積 {bank_after_this_hole}點）**", unsafe_allow_html=True)
+            log.append(f"第{i+1}洞 平手，銀行累積 {bank_after_this_hole}點")
+            point_bank = bank_after_this_hole
 
         for p in players:
             if running_points[p] >= 8:
