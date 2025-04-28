@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import os
@@ -84,17 +85,18 @@ for i in range(18):
         raw = scores[f"第{i+1}洞"]
         evt = events[f"第{i+1}洞"]
 
-        penalties = {p: 0 for p in players}
+        # 先事件懲罰
+        event_penalties = {p: 0 for p in players}
         for p in players:
             acts = evt[p] if isinstance(evt[p], list) else []
-            pen = 0
-            pen += sum(1 for act in acts if act in penalty_keywords)
+            pen = sum(1 for act in acts if act in penalty_keywords)
             if current_titles[p] == "SuperRich" and "par_on" in acts:
                 pen += 1
             pen = min(pen, 3)
             running_points[p] -= pen
-            penalties[p] = pen
+            event_penalties[p] = pen
 
+        # 判定勝負
         victory_map = {}
         for p1 in players:
             p1_wins = 0
@@ -119,25 +121,39 @@ for i in range(18):
             bird_icon = " 🐦" if is_birdy else ""
 
             gain_points = point_bank
-            transfer = 0
+            birdie_penalties = {p: 0 for p in players}
             if is_birdy:
                 for p in players:
                     if p != w and running_points[p] > 0:
                         running_points[p] -= 1
-                        transfer += 1
-            gain_points += transfer
+                        gain_points += 1
+                        birdie_penalties[p] += 1
+
             running_points[w] += gain_points
 
+            # 顯示
             winner_text = f"🏆 本洞勝者：{w}{bird_icon}（取得 +{gain_points} 點）"
-            penalty_texts = [f"{p} 扣 {penalties[p]}點" for p in players if penalties.get(p, 0) > 0]
+            penalty_texts = []
+            for p in players:
+                total_penalty = event_penalties.get(p, 0) + birdie_penalties.get(p, 0)
+                if total_penalty > 0:
+                    penalty_texts.append(f"{p} 扣 {total_penalty}點")
             if penalty_texts:
                 winner_text += "｜" + "；".join(penalty_texts)
             st.markdown(f"**{winner_text}**", unsafe_allow_html=True)
             log.append(f"第{i+1}洞 勝者: {w} 🎯 +{gain_points}點")
             point_bank = 1
+
         else:
-            penalty_texts = [f"{p} 扣 {penalties[p]}點" for p in players if penalties.get(p, 0) > 0]
-            penalty_summary = "｜" + "；".join(penalty_texts) if penalty_texts else ""
+            penalty_texts = []
+            for p in players:
+                total_penalty = event_penalties.get(p, 0)
+                if total_penalty > 0:
+                    penalty_texts.append(f"{p} 扣 {total_penalty}點")
+            if penalty_texts:
+                penalty_summary = "｜" + "；".join(penalty_texts)
+            else:
+                penalty_summary = ""
             st.markdown(f"⚖️ **本洞平手{penalty_summary}**", unsafe_allow_html=True)
             point_bank += 1
             log.append(f"第{i+1}洞 平手 銀行累積 {point_bank}點")
