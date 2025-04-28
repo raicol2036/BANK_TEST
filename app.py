@@ -158,7 +158,7 @@ for i in range(18):
                 penalty_summary = "｜" + "；".join(penalty_texts)
             else:
                 penalty_summary = ""
-            st.markdown(f"⚖️ **本洞平手{penalty_summary}（Bank累積 {bank_after_this_hole}點）**", unsafe_allow_html=True)
+            st.markdown(f"⚖️ **本洞平手{penalty_summary}（下洞基本點數 {bank_after_this_hole}點）**", unsafe_allow_html=True)
             log.append(f"第{i+1}洞 平手，銀行累積 {bank_after_this_hole}點")
             point_bank = bank_after_this_hole
 
