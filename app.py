@@ -114,6 +114,7 @@ for i in range(18):
             victory_map[p1] = p1_wins
 
         winners = [p for p in players if victory_map[p] == len(players) - 1]
+        total_penalty_this_hole = sum(event_penalties.values())
 
         if len(winners) == 1:
             w = winners[0]
@@ -131,7 +132,6 @@ for i in range(18):
 
             running_points[w] += gain_points
 
-            # 顯示
             winner_text = f"🏆 本洞勝者：{w}{bird_icon}（取得 +{gain_points} 點）"
             penalty_texts = []
             for p in players:
@@ -145,6 +145,8 @@ for i in range(18):
             point_bank = 1
 
         else:
+            # 平手時也要把事件扣點加到 bank
+            point_bank += 1 + total_penalty_this_hole
             penalty_texts = []
             for p in players:
                 total_penalty = event_penalties.get(p, 0)
@@ -154,8 +156,7 @@ for i in range(18):
                 penalty_summary = "｜" + "；".join(penalty_texts)
             else:
                 penalty_summary = ""
-            st.markdown(f"⚖️ **本洞平手{penalty_summary}**", unsafe_allow_html=True)
-            point_bank += 1
+            st.markdown(f"⚖️ **本洞平手{penalty_summary}（Bank累積 {point_bank}點）**", unsafe_allow_html=True)
             log.append(f"第{i+1}洞 平手 銀行累積 {point_bank}點")
 
         for p in players:
