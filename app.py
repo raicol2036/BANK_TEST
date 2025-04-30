@@ -30,20 +30,19 @@ mode = st.session_state.mode
 
 # --- 球場選擇 ---
 course_options = course_df["course_name"].unique().tolist()
-area_options = course_df["area"].unique().tolist()
+selected_course = st.selectbox("選擇球場", course_options)
 
-front_course = st.selectbox("前九洞球場", [f"{c}-{a}" for c in course_options for a in area_options], key="front")
-back_course = st.selectbox("後九洞球場", [f"{c}-{a}" for c in course_options for a in area_options], key="back")
+filtered_area = course_df[course_df["course_name"] == selected_course]["area"].unique().tolist()
+front_area = st.selectbox("前九洞區域", filtered_area, key="front_area")
+back_area = st.selectbox("後九洞區域", filtered_area, key="back_area")
 
-def get_course_info(selection):
-    cname, area = selection.split("-")
+def get_course_info(cname, area):
     temp = course_df[(course_df["course_name"] == cname) & (course_df["area"] == area)]
     temp = temp.sort_values("hole")
     return temp["par"].tolist(), temp["hcp"].tolist()
 
-front_par, front_hcp = get_course_info(front_course)
-back_par, back_hcp = get_course_info(back_course)
-
+front_par, front_hcp = get_course_info(selected_course, front_area)
+back_par, back_hcp = get_course_info(selected_course, back_area)
 par = front_par + back_par
 hcp = front_hcp + back_hcp
 
